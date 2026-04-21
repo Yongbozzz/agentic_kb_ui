@@ -7,11 +7,11 @@
   >
     <button
       v-if="!embedded && !isOpen"
-      class="floating-trigger"
+      class="floating-trigger flex-left"
       type="button"
       @click="openPanel"
     >
-      <span class="trigger-icon-wrap">
+      <span class="trigger-icon-wrap vertical-center">
         <BarChartOutlined class="trigger-icon" />
       </span>
       <span class="trigger-copy">
@@ -34,7 +34,7 @@
     >
       <div v-if="!embedded" class="pin-rail">
         <button
-          class="rail-button"
+          class="rail-button vertical-center"
           :class="{ active: isPinned }"
           type="button"
           :title="t('monitor.pin')"
@@ -45,9 +45,9 @@
       </div>
 
       <div class="panel-shell" :class="{ embedded }">
-        <div class="panel-header" @mousedown="startDrag">
-          <div class="header-brand">
-            <span class="brand-icon">
+        <div class="panel-header flex-between" @mousedown="startDrag">
+          <div class="header-brand flex-left">
+            <span class="brand-icon vertical-center">
               <BarChartOutlined />
             </span>
             <div class="header-copy">
@@ -56,10 +56,10 @@
             </div>
           </div>
 
-          <div class="header-actions">
+          <div class="header-actions flex-left">
             <a-tooltip :title="t('monitor.refresh')">
               <button
-                class="action-button"
+                class="action-button vertical-center"
                 type="button"
                 @click="handleManualRefresh"
               >
@@ -71,7 +71,7 @@
             </a-tooltip>
             <a-tooltip :title="t('monitor.resetStats')">
               <button
-                class="action-button action-danger"
+                class="action-button action-danger vertical-center"
                 type="button"
                 :disabled="isRefreshing || isResetting"
                 @click="handleReset"
@@ -84,7 +84,7 @@
             </a-tooltip>
             <button
               v-if="!embedded"
-              class="close-button"
+              class="close-button vertical-center"
               type="button"
               :title="t('monitor.close')"
               @click="closePanel"
@@ -96,7 +96,7 @@
 
         <div class="panel-scroll" :class="{ embedded }">
           <section class="cloud-panel section-card">
-            <div class="section-heading compact-gap">
+            <div class="section-heading compact-gap flex-between">
               <div>
                 <div class="section-title">
                   {{ t("monitor.cloudProvider") }}
@@ -116,9 +116,12 @@
                 </div>
 
                 <div class="metric-card saved-token-card">
-                  <span class="metric-card-label">{{
-                    t("monitor.savedTokenNoCost")
-                  }}</span>
+                  <span class="metric-card-label">
+                    {{ t("monitor.savedTokenNoCostMain") }}
+                    <span class="metric-card-label-sub">
+                      {{ t("monitor.noCost") }}
+                    </span>
+                  </span>
                   <span class="metric-card-value">{{
                     savedTokenNoCostText
                   }}</span>
@@ -167,7 +170,7 @@
           </section>
 
           <section class="local-panel section-card">
-            <div class="section-heading compact-gap">
+            <div class="section-heading compact-gap flex-between">
               <div>
                 <div class="section-title">{{ t("monitor.localTotals") }}</div>
               </div>
@@ -185,7 +188,7 @@
           </section>
 
           <section class="overall-panel section-card">
-            <div class="section-heading compact-gap">
+            <div class="section-heading compact-gap flex-between">
               <div>
                 <div class="section-title">
                   {{ t("monitor.overallTotals") }}
@@ -256,14 +259,6 @@ const props = withDefaults(
   },
 );
 
-interface TokenModelMetrics {
-  total_tokens: number;
-}
-
-interface OverallDisplayMetrics {
-  total_tokens: number;
-}
-
 interface TotalInputMetrics {
   original_tokens: number;
   compressed_tokens: number;
@@ -278,26 +273,29 @@ interface SystemAndToolsMetrics {
   rest_pct: number;
 }
 
+interface TokenMetrics {
+  total_tokens: number;
+}
+
+interface CompressionMetrics {
+  total_input: TotalInputMetrics;
+  system_and_tools: SystemAndToolsMetrics;
+}
+
 interface MonitorData {
   token_metrics: {
-    local_model: TokenModelMetrics;
-    cloud_model: TokenModelMetrics;
-    overall: OverallDisplayMetrics;
+    local_model: TokenMetrics;
+    cloud_model: TokenMetrics;
+    overall: TokenMetrics;
   };
-  compression: {
-    total_input: TotalInputMetrics;
-    system_and_tools: SystemAndToolsMetrics;
-    timing: {
-      avg_ms: number;
-    };
-  };
+  compression: CompressionMetrics;
 }
 
 const POLL_INTERVAL = 3000;
 const { t, locale } = useI18n();
 const embedded = computed(() => props.embedded);
 
-const monitorData = ref<MonitorData>({
+const createDefaultMonitorData = (): MonitorData => ({
   token_metrics: {
     local_model: { total_tokens: 0 },
     cloud_model: { total_tokens: 0 },
@@ -316,11 +314,10 @@ const monitorData = ref<MonitorData>({
       saved_tokens: 0,
       rest_pct: 0,
     },
-    timing: {
-      avg_ms: 0,
-    },
   },
 });
+
+const monitorData = ref<MonitorData>(createDefaultMonitorData());
 const isOpen = ref(false);
 const isPinned = ref(false);
 const isDragging = ref(false);
@@ -378,13 +375,36 @@ const formatCompactNumber = (value: number) => {
   return formatNumber(value);
 };
 const formatPercent = (value: number) => `${value.toFixed(1)}%`;
-const formatMilliseconds = (value: number) =>
-  `${value.toFixed(1)} ${t("monitor.msUnit")}`;
 
 const normalizeNumber = (value: unknown, fallback = 0) => {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : fallback;
 };
+
+const normalizeTokenMetrics = (metrics: any): TokenMetrics => ({
+  total_tokens: normalizeNumber(metrics?.total_tokens),
+});
+
+const normalizeCompressionMetrics = (compression: any): CompressionMetrics => ({
+  total_input: {
+    original_tokens: normalizeNumber(compression?.total_input?.original_tokens),
+    compressed_tokens: normalizeNumber(
+      compression?.total_input?.compressed_tokens,
+    ),
+    save_pct: normalizeNumber(compression?.total_input?.save_pct),
+    rest_pct: normalizeNumber(compression?.total_input?.rest_pct),
+  },
+  system_and_tools: {
+    original_tokens: normalizeNumber(
+      compression?.system_and_tools?.original_tokens,
+    ),
+    compressed_tokens: normalizeNumber(
+      compression?.system_and_tools?.compressed_tokens,
+    ),
+    saved_tokens: normalizeNumber(compression?.system_and_tools?.saved_tokens),
+    rest_pct: normalizeNumber(compression?.system_and_tools?.rest_pct),
+  },
+});
 
 const normalizeMonitorData = (payload: any): MonitorData => {
   const stats =
@@ -392,54 +412,13 @@ const normalizeMonitorData = (payload: any): MonitorData => {
 
   return {
     token_metrics: {
-      local_model: {
-        total_tokens: normalizeNumber(
-          stats?.token_metrics?.local_model?.total_tokens,
-        ),
-      },
-      cloud_model: {
-        total_tokens: normalizeNumber(
-          stats?.token_metrics?.cloud_model?.total_tokens,
-        ),
-      },
-      overall: {
-        total_tokens: normalizeNumber(
-          stats?.token_metrics?.overall?.total_tokens,
-        ),
-      },
+      local_model: normalizeTokenMetrics(stats?.token_metrics?.local_model),
+      cloud_model: normalizeTokenMetrics(stats?.token_metrics?.cloud_model),
+      overall: normalizeTokenMetrics(stats?.token_metrics?.overall),
     },
-    compression: {
-      total_input: {
-        original_tokens: normalizeNumber(
-          stats?.compression?.total_input?.original_tokens,
-        ),
-        compressed_tokens: normalizeNumber(
-          stats?.compression?.total_input?.compressed_tokens,
-        ),
-        save_pct: normalizeNumber(stats?.compression?.total_input?.save_pct),
-        rest_pct: normalizeNumber(stats?.compression?.total_input?.rest_pct),
-      },
-      system_and_tools: {
-        original_tokens: normalizeNumber(
-          stats?.compression?.system_and_tools?.original_tokens,
-        ),
-        compressed_tokens: normalizeNumber(
-          stats?.compression?.system_and_tools?.compressed_tokens,
-        ),
-        saved_tokens: normalizeNumber(
-          stats?.compression?.system_and_tools?.saved_tokens,
-        ),
-        rest_pct: normalizeNumber(
-          stats?.compression?.system_and_tools?.rest_pct,
-        ),
-      },
-      timing: {
-        avg_ms: normalizeNumber(stats?.compression?.timing?.avg_ms),
-      },
-    },
+    compression: normalizeCompressionMetrics(stats?.compression),
   };
 };
-
 const fetchStats = async (showRefreshing = false) => {
   if (showRefreshing) {
     isRefreshing.value = true;
@@ -472,17 +451,14 @@ const stopPolling = () => {
 const localTotal = computed(
   () => monitorData.value.token_metrics.local_model.total_tokens,
 );
-const cloudTotal = computed(
-  () => monitorData.value.token_metrics.cloud_model.total_tokens,
+const compressedInputTotal = computed(
+  () => monitorData.value.compression.total_input.compressed_tokens,
 );
-const derivedOverallTotal = computed(() => localTotal.value + cloudTotal.value);
-const overallTotal = computed(() => {
-  const backendOverall = monitorData.value.token_metrics.overall.total_tokens;
-  return backendOverall > 0 ? backendOverall : derivedOverallTotal.value;
-});
+const overallTotal = computed(
+  () => localTotal.value + compressedInputTotal.value,
+);
 
 const localTotalText = computed(() => formatCompactNumber(localTotal.value));
-const cloudTotalText = computed(() => formatCompactNumber(cloudTotal.value));
 const overallTotalText = computed(() =>
   formatCompactNumber(overallTotal.value),
 );
@@ -500,7 +476,7 @@ const cloudShareOfOverall = computed(() => {
     return 0;
   }
 
-  return (cloudTotal.value / overallTotal.value) * 100;
+  return (compressedInputTotal.value / overallTotal.value) * 100;
 });
 
 const localShareText = computed(() => formatPercent(localShareOfOverall.value));
@@ -519,9 +495,6 @@ const savedTokenNoCostText = computed(() =>
   formatCompactNumber(
     monitorData.value.compression.system_and_tools.saved_tokens,
   ),
-);
-const averageLatencyText = computed(() =>
-  formatMilliseconds(monitorData.value.compression.timing.avg_ms),
 );
 const compressionRateValue = computed(() => {
   const savePct = monitorData.value.compression.total_input.save_pct;
@@ -730,8 +703,6 @@ onBeforeUnmount(() => {
   position: fixed;
   right: 0;
   top: 60%;
-  display: flex;
-  align-items: center;
   gap: 10px;
   width: 74px;
   height: 68px;
@@ -774,9 +745,6 @@ onBeforeUnmount(() => {
 .trigger-icon-wrap {
   position: relative;
   z-index: 1;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
   flex: 0 0 44px;
   width: 44px;
   height: 44px;
@@ -793,8 +761,6 @@ onBeforeUnmount(() => {
 .trigger-copy {
   position: relative;
   z-index: 1;
-  display: flex;
-  align-items: center;
   min-width: 0;
   overflow: hidden;
 }
@@ -888,9 +854,7 @@ onBeforeUnmount(() => {
 }
 
 .panel-header {
-  display: flex;
   align-items: flex-start;
-  justify-content: space-between;
   gap: 14px;
   padding: 16px;
   background: var(--monitor-surface-soft);
@@ -903,15 +867,11 @@ onBeforeUnmount(() => {
 }
 
 .header-brand {
-  display: flex;
   align-items: flex-start;
   gap: 12px;
 }
 
 .brand-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
   width: 40px;
   height: 40px;
   border-radius: 14px;
@@ -934,29 +894,12 @@ onBeforeUnmount(() => {
   color: var(--font-tip-color);
 }
 
-.panel-title {
-  font-size: 17px;
-  font-weight: 700;
-  color: var(--font-main-color);
-}
-
-.panel-subtitle {
-  font-size: 12px;
-  line-height: 1.5;
-  color: var(--font-tip-color);
-}
-
 .header-actions {
-  display: flex;
-  align-items: center;
   gap: 8px;
 }
 
 .action-button,
 .close-button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
   width: 34px;
   height: 34px;
   border: 1px solid var(--monitor-border);
@@ -1073,53 +1016,8 @@ onBeforeUnmount(() => {
   font-size: 24px;
 }
 
-.assistant-panel.is-embedded .totals-value {
-  margin-bottom: 10px;
-  font-size: 22px;
-}
-
-.assistant-panel.is-embedded .compression-summary-grid,
 .assistant-panel.is-embedded .compression-dashboard {
-  gap: 8px;
-}
-
-.assistant-panel.is-embedded .overall-subtext {
-  gap: 6px;
-  .model-value {
-    font-size: 12px;
-    color: var(--font-main-color);
-  }
-}
-
-.assistant-panel.is-embedded .compression-dashboard {
-  grid-template-columns: 1fr;
   gap: 10px;
-}
-
-.assistant-panel.is-embedded .compression-visual-layout,
-.assistant-panel.is-embedded .compression-summary-stack {
-  grid-template-columns: 1fr;
-}
-
-.assistant-panel.is-embedded .metric-card,
-.assistant-panel.is-embedded .original-card,
-.assistant-panel.is-embedded .latency-card {
-  padding: 12px 14px;
-}
-
-.assistant-panel.is-embedded .compression-chart-card,
-.assistant-panel.is-embedded .compression-rate-card,
-.assistant-panel.is-embedded .compression-summary-card,
-.assistant-panel.is-embedded .compression-mini-track-card {
-  border-radius: 14px;
-}
-
-.assistant-panel.is-embedded .compression-dashboard {
-  grid-template-columns: 1fr;
-}
-
-.assistant-panel.is-embedded .compression-summary-grid {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .assistant-panel.is-embedded .compression-ring-card {
@@ -1140,33 +1038,6 @@ onBeforeUnmount(() => {
 
 .assistant-panel.is-embedded .section-title {
   font-size: 13px;
-}
-
-.assistant-panel.is-embedded .section-tag {
-  padding: 3px 7px;
-  font-size: 10px;
-}
-
-.assistant-panel.is-embedded .totals-label-row {
-  margin-bottom: 10px;
-}
-
-.assistant-panel.is-embedded .totals-label {
-  font-size: 11px;
-}
-
-.assistant-panel.is-embedded .summary-equation {
-  gap: 4px;
-  padding: 6px 8px;
-}
-
-.assistant-panel.is-embedded .equation-label,
-.assistant-panel.is-embedded .equation-symbol {
-  font-size: 11px;
-}
-
-.assistant-panel.is-embedded .equation-value {
-  font-size: 12px;
 }
 
 .assistant-panel.is-embedded .overall-copy {
@@ -1194,13 +1065,7 @@ onBeforeUnmount(() => {
   font-size: 18px;
 }
 
-.assistant-panel.is-embedded .mini-track-labels {
-  flex-direction: column;
-  align-items: flex-start;
-}
-
-.section-card,
-.efficiency-card {
+.section-card {
   padding: 14px;
   border-radius: 20px;
   background: var(--monitor-surface);
@@ -1208,9 +1073,6 @@ onBeforeUnmount(() => {
 }
 
 .section-heading {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
   gap: 10px;
   margin-bottom: 12px;
 }
@@ -1223,34 +1085,6 @@ onBeforeUnmount(() => {
   font-size: 14px;
   font-weight: 700;
   color: var(--font-main-color);
-}
-
-.section-caption {
-  margin-top: 2px;
-  font-size: 11px;
-  color: var(--font-tip-color);
-}
-
-.section-tag {
-  padding: 4px 9px;
-  border-radius: 999px;
-  font-size: 11px;
-  white-space: nowrap;
-}
-
-.section-tag.ink {
-  color: var(--font-text-color);
-  background: var(--monitor-surface-soft);
-}
-
-.section-tag.green {
-  color: var(--monitor-success);
-  background: var(--monitor-success-soft);
-}
-
-.section-tag.red {
-  color: var(--monitor-danger);
-  background: var(--monitor-danger-soft);
 }
 
 .cloud-panel {
@@ -1288,37 +1122,8 @@ onBeforeUnmount(() => {
   background: var(--monitor-cloud);
 }
 
-.totals-dot.original {
-  background: var(--monitor-border-soft);
-}
-
-.totals-dot.latency {
-  background: var(--color-purple);
-}
-
 .totals-dot.overall {
   background: var(--color-primary-deep);
-}
-
-.totals-label {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--font-text-color);
-}
-
-.totals-value {
-  margin-bottom: 12px;
-  font-size: 30px;
-  font-weight: 700;
-  line-height: 1;
-}
-
-.totals-value.local {
-  color: var(--monitor-primary);
-}
-
-.totals-value.cloud {
-  color: var(--monitor-cloud);
 }
 
 .totals-bar-track {
@@ -1391,14 +1196,6 @@ onBeforeUnmount(() => {
   flex-direction: column;
   justify-content: center;
   gap: 6px;
-}
-
-.overall-subtext {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  font-size: 11px;
-  color: var(--font-tip-color);
 }
 
 .overall-label {
@@ -1549,27 +1346,6 @@ onBeforeUnmount(() => {
   letter-spacing: -0.03em;
 }
 
-.efficiency-grid {
-  display: contents;
-}
-
-.compression-panel {
-  background: linear-gradient(
-    180deg,
-    color-mix(
-        in srgb,
-        var(--monitor-cloud-soft) 54%,
-        var(--monitor-surface) 46%
-      )
-      0%,
-    var(--monitor-surface) 100%
-  );
-  box-shadow:
-    0 10px 24px rgba(133, 77, 14, 0.06),
-    0 2px 6px rgba(15, 23, 42, 0.04),
-    inset 0 1px 0 rgba(255, 255, 255, 0.3);
-}
-
 .local-panel {
   background: linear-gradient(
     180deg,
@@ -1665,44 +1441,6 @@ onBeforeUnmount(() => {
   );
 }
 
-.latency-card {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  width: 100%;
-  padding: 14px 16px;
-  border-radius: 18px;
-  border: 1px solid
-    color-mix(in srgb, var(--color-purple) 16%, var(--monitor-border) 84%);
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--color-purpleBg) 78%, var(--monitor-surface) 22%) 0%,
-    color-mix(in srgb, var(--monitor-surface) 90%, var(--color-purpleBg) 10%)
-      100%
-  );
-}
-
-.latency-card-head {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-}
-
-.latency-card-label {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--font-text-color);
-}
-
-.latency-card-value {
-  flex-shrink: 0;
-  font-size: 18px;
-  line-height: 1;
-  font-weight: 600;
-  color: var(--color-purple);
-}
-
 .compression-dashboard {
   display: flex;
   flex-direction: column;
@@ -1728,6 +1466,12 @@ onBeforeUnmount(() => {
 .metric-card-label {
   font-size: 13px;
   font-weight: 600;
+}
+
+.metric-card-label-sub {
+  font-size: 11px;
+  font-weight: 500;
+  opacity: 0.72;
 }
 
 .metric-card-value {
@@ -1763,165 +1507,6 @@ onBeforeUnmount(() => {
     var(--monitor-surface) 18%
   );
   color: var(--monitor-success);
-}
-
-.compression-visual-layout {
-  display: flex;
-  align-items: stretch;
-  gap: 12px;
-}
-
-.compression-chart-card {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  padding: 12px;
-  border-radius: 20px;
-  border: 1px solid
-    color-mix(
-      in srgb,
-      var(--monitor-border-soft) 65%,
-      var(--monitor-border) 35%
-    );
-  background: linear-gradient(
-    180deg,
-    color-mix(
-        in srgb,
-        var(--monitor-surface) 86%,
-        var(--monitor-primary-soft) 14%
-      )
-      0%,
-    color-mix(in srgb, var(--monitor-surface) 92%, var(--monitor-cloud-soft) 8%)
-      100%
-  );
-}
-
-.comparison-split-layout {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 14px;
-  align-items: stretch;
-}
-
-.comparison-bars {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.comparison-bars.compact {
-  justify-content: center;
-  gap: 14px;
-}
-
-.comparison-row {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.comparison-row.metric-only {
-  gap: 10px;
-  padding: 14px 14px 12px;
-  border-radius: 16px;
-  border: 1px solid var(--monitor-border);
-  background: color-mix(
-    in srgb,
-    var(--monitor-surface) 84%,
-    var(--monitor-surface-soft) 16%
-  );
-}
-
-.comparison-row.metric-only.original {
-  border-color: color-mix(
-    in srgb,
-    var(--monitor-primary) 18%,
-    var(--monitor-border) 82%
-  );
-  background: color-mix(
-    in srgb,
-    var(--monitor-primary-soft) 66%,
-    var(--monitor-surface) 34%
-  );
-}
-
-.comparison-row.metric-only.compressed {
-  border-color: color-mix(
-    in srgb,
-    var(--monitor-cloud) 18%,
-    var(--monitor-border) 82%
-  );
-  background: color-mix(
-    in srgb,
-    var(--monitor-cloud-soft) 74%,
-    var(--monitor-surface) 26%
-  );
-}
-
-.comparison-row-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-}
-
-.comparison-label {
-  font-size: 12px;
-  color: var(--font-text-color);
-  font-weight: 600;
-}
-
-.comparison-value {
-  font-size: 24px;
-  line-height: 1;
-  font-weight: 700;
-  color: var(--font-main-color);
-}
-
-.compression-summary-stack {
-  width: 100%;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  align-content: start;
-  min-width: 0;
-  gap: 12px;
-}
-
-.original-card {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  width: 100%;
-  padding: 14px 16px;
-  border-radius: 18px;
-  border: 1px solid
-    color-mix(
-      in srgb,
-      var(--monitor-border-soft) 72%,
-      var(--monitor-border) 28%
-    );
-  background: linear-gradient(
-    180deg,
-    color-mix(
-        in srgb,
-        var(--monitor-surface-soft) 78%,
-        var(--monitor-surface) 22%
-      )
-      0%,
-    color-mix(
-        in srgb,
-        var(--monitor-surface) 90%,
-        var(--monitor-surface-soft) 10%
-      )
-      100%
-  );
-}
-
-@media (max-width: 900px) {
-  .compression-visual-layout,
-  .compression-summary-stack {
-    grid-template-columns: 1fr;
-  }
 }
 
 .compression-ring-card {
@@ -1971,12 +1556,6 @@ onBeforeUnmount(() => {
       padding-left: 4px;
     }
   }
-}
-
-.compression-summary-stack {
-  flex: 1 1 0;
-  width: auto;
-  min-width: 0;
 }
 
 .compression-ring-wrap {
@@ -2037,147 +1616,6 @@ onBeforeUnmount(() => {
   font-weight: 600;
   line-height: 1.3;
   color: var(--font-main-color);
-}
-
-.compression-rate-card {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding: 18px;
-  border-radius: 20px;
-  border: 1px solid
-    color-mix(in srgb, var(--monitor-success) 22%, var(--monitor-border) 78%);
-  background: linear-gradient(
-    180deg,
-    color-mix(
-        in srgb,
-        var(--monitor-success-soft) 82%,
-        var(--monitor-surface) 18%
-      )
-      0%,
-    color-mix(
-        in srgb,
-        var(--monitor-surface) 92%,
-        var(--monitor-success-soft) 8%
-      )
-      100%
-  );
-}
-
-.compression-rate-label {
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--font-text-color);
-}
-
-.compression-rate-value {
-  font-size: 42px;
-  line-height: 1;
-  font-weight: 700;
-  letter-spacing: -0.04em;
-  color: var(--monitor-success);
-}
-
-.compression-summary-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-}
-
-.compression-summary-grid.single-column {
-  width: 100%;
-  grid-template-columns: minmax(0, 1fr);
-}
-
-.compression-summary-grid.single-column .compression-summary-card {
-  width: 100%;
-  flex-direction: row;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.compression-summary-grid.single-column .compression-summary-label {
-  flex: 1;
-}
-
-.compression-summary-grid.single-column .compression-summary-value {
-  flex-shrink: 0;
-}
-
-.compression-summary-card {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  min-width: 0;
-  padding: 14px;
-  border-radius: 18px;
-  border: 1px solid var(--monitor-border);
-  background: var(--monitor-surface);
-}
-
-.compression-summary-card.saved {
-  background: color-mix(
-    in srgb,
-    var(--monitor-success-soft) 82%,
-    var(--monitor-surface) 18%
-  );
-  border-color: color-mix(
-    in srgb,
-    var(--monitor-success) 20%,
-    var(--monitor-border) 80%
-  );
-}
-
-.compression-summary-card.rate {
-  background: color-mix(
-    in srgb,
-    var(--monitor-success-soft) 82%,
-    var(--monitor-surface) 18%
-  );
-  border-color: color-mix(
-    in srgb,
-    var(--monitor-success) 20%,
-    var(--monitor-border) 80%
-  );
-}
-
-.compression-summary-card.latency {
-  display: flex;
-  flex-direction: row;
-  background: color-mix(
-    in srgb,
-    var(--color-purpleBg) 78%,
-    var(--monitor-surface) 22%
-  );
-  border-color: color-mix(
-    in srgb,
-    var(--color-purple) 16%,
-    var(--monitor-border) 84%
-  );
-}
-
-.compression-summary-label {
-  font-size: 12px;
-  color: var(--font-text-color);
-  font-weight: 600;
-}
-
-.compression-summary-value {
-  font-size: 24px;
-  line-height: 1;
-  font-weight: 700;
-  color: var(--font-main-color);
-}
-
-.compression-summary-value.rate-value {
-  color: var(--monitor-success);
-}
-
-.latency-value {
-  font-size: 20px;
-  font-weight: 700;
-  color: var(--color-purple);
 }
 
 @keyframes panel-enter {
