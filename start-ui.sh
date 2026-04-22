@@ -20,28 +20,35 @@ get_local_ip() {
 SERVER_HOST="${SERVER_HOST:-}"
 if [ -z "${SERVER_HOST}" ]; then
   SERVER_HOST="$(get_local_ip)"
-  echo "自动检测到本机 IP: ${SERVER_HOST}"
+  echo "Detected local IP address: ${SERVER_HOST}"
 else
-  echo "使用环境变量 SERVER_HOST: ${SERVER_HOST}"
+  echo "Using SERVER_HOST from environment: ${SERVER_HOST}"
 fi
 
 if [ -z "${SERVER_HOST}" ]; then
-  echo "无法自动检测 SERVER_HOST，请先 export SERVER_HOST=你的服务器IP" >&2
+  echo "Unable to detect SERVER_HOST automatically. Please export SERVER_HOST=<your-server-ip> first." >&2
   exit 1
 fi
 
 UI_PORT="${UI_PORT:-7000}"
 STATS_API_PORT="${STATS_API_PORT:-8000}"
 CHATBOT_WS_PORT="${CHATBOT_WS_PORT:-18789}"
+AUTH_TOIKEN="${AUTH_TOIKEN:-}"
+
+if [ -z "${AUTH_TOIKEN}" ]; then
+  echo "AUTH_TOIKEN is not set. Please export AUTH_TOIKEN=<your-auth-token> first." >&2
+  exit 1
+fi
 
 export SERVER_HOST
 export VITE_API_URL="/"
 export VITE_API_BASE_URL="/"
 export VITE_CHATBOT_URL="ws://${SERVER_HOST}:${CHATBOT_WS_PORT}/"
 export VITE_WS_URL="${VITE_CHATBOT_URL}"
+export VITE_AUTH_TOKEN="${AUTH_TOIKEN}"
 export VITE_DEV_STATS_API_TARGET="http://${SERVER_HOST}:${STATS_API_PORT}"
 
-echo "前端访问地址: http://${SERVER_HOST}:${UI_PORT}"
+echo "UI URL: http://${SERVER_HOST}:${UI_PORT}"
 
 cd "${UI_DIR}"
 npm run dev -- --host 0.0.0.0 --port "${UI_PORT}"

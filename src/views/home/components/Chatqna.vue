@@ -261,7 +261,7 @@ const resizeObserverRef = ref<ResizeObserver | null>(null);
 
 const SCROLL_THRESHOLD = 80;
 const DEFAULT_CHAT_WS_PORT = "18789";
-const AUTH_TOKEN = "d7932a214e75f67d196d2588584aaa78606e30f62ddf2212";
+const AUTH_TOKEN = import.meta.env.VITE_AUTH_TOKEN?.trim() || "";
 
 const resolveSocketUrl = () => {
   const configuredUrl =
