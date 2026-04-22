@@ -97,16 +97,16 @@ const closeMonitor = () => {
   width: 40px;
   height: 68px;
   padding: 0;
-  border: 1px solid color-mix(in srgb, var(--color-primary) 18%, #ffffff 82%);
+  border: 1px solid var(--monitor-trigger-border);
   border-right: none;
   border-radius: 16px 0 0 16px;
   background: linear-gradient(
     180deg,
-    rgba(255, 255, 255, 0.98) 0%,
-    color-mix(in srgb, var(--color-primaryBg) 24%, #ffffff 76%) 100%
+    var(--monitor-trigger-bg-start) 0%,
+    var(--monitor-trigger-bg-end) 100%
   );
-  color: var(--color-primary);
-  box-shadow: -10px 14px 30px rgba(15, 23, 42, 0.12);
+  color: var(--monitor-trigger-color);
+  box-shadow: var(--monitor-trigger-shadow);
   backdrop-filter: blur(14px);
   cursor: pointer;
   transition:
@@ -127,22 +127,22 @@ const closeMonitor = () => {
   border-radius: 999px;
   background: linear-gradient(
     180deg,
-    var(--color-primary-second) 0%,
-    var(--color-primary) 100%
+    var(--monitor-trigger-accent-start) 0%,
+    var(--monitor-trigger-accent-end) 100%
   );
   opacity: 0.9;
 }
 
 .monitor-trigger:hover {
   transform: translateY(-50%) translateX(-4px);
-  border-color: color-mix(in srgb, var(--color-primary) 34%, #ffffff 66%);
+  border-color: var(--monitor-trigger-hover-border);
   background: linear-gradient(
     180deg,
-    rgba(255, 255, 255, 1) 0%,
-    color-mix(in srgb, var(--color-primaryBg) 34%, #ffffff 66%) 100%
+    var(--monitor-trigger-hover-bg-start) 0%,
+    var(--monitor-trigger-hover-bg-end) 100%
   );
-  color: var(--color-primary-hover);
-  box-shadow: -14px 18px 32px rgba(15, 23, 42, 0.16);
+  color: var(--monitor-trigger-hover-color);
+  box-shadow: var(--monitor-trigger-hover-shadow);
 }
 
 .monitor-trigger-icon {

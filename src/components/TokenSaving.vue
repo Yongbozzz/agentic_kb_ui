@@ -297,7 +297,7 @@ interface MonitorData {
   compression: CompressionMetrics;
 }
 
-const POLL_INTERVAL = 20000000;
+const POLL_INTERVAL = 2000;
 const { t, locale } = useI18n();
 const embedded = computed(() => props.embedded);
 const embeddedClosable = computed(() => props.embeddedClosable);
@@ -516,21 +516,11 @@ const savedTokenNoCostText = computed(() =>
 );
 const compressionRateValue = computed(() => {
   const savePct = monitorData.value.compression.total_input.rest_pct;
-
-  if (savePct > 0) {
-    return savePct;
-  }
-
-  return Math.max(0, 100 - monitorData.value.compression.total_input.save_pct);
+  return savePct;
 });
 const savedTokenRateValue = computed(() => {
   const savePct = monitorData.value.compression.total_input.save_pct;
-
-  if (savePct > 0) {
-    return savePct;
-  }
-
-  return Math.max(0, 100 - monitorData.value.compression.total_input.rest_pct);
+  return savePct;
 });
 const compressionRateText = computed(() =>
   formatPercent(compressionRateValue.value),
@@ -540,8 +530,9 @@ const savedTokenRateText = computed(() =>
 );
 const ringRadius = 46;
 const ringCircumference = 2 * Math.PI * ringRadius;
+const ringProgressValue = computed(() => localShareOfOverall.value);
 const ringDashOffset = computed(
-  () => ringCircumference * (1 - compressionRateValue.value / 100),
+  () => ringCircumference * (1 - ringProgressValue.value / 100),
 );
 
 const panelStyle = computed(() => ({
@@ -1248,15 +1239,16 @@ onBeforeUnmount(() => {
 }
 
 .cloud-card.cloud-consumption {
-  border-color: color-mix(
-    in srgb,
-    var(--monitor-border-accent) 72%,
-    var(--monitor-border-soft)
-  );
+  border: 1px solid
+    color-mix(
+      in srgb,
+      var(--monitor-border-accent) 72%,
+      var(--monitor-border-soft)
+    );
   background: linear-gradient(
     135deg,
-    color-mix(in srgb, var(--monitor-cloud-soft) 94%, transparent),
-    color-mix(in srgb, var(--monitor-primary-soft) 94%, transparent)
+    color-mix(in srgb, var(--monitor-danger-soft) 78%, transparent),
+    color-mix(in srgb, var(--monitor-primary-soft) 72%, transparent)
   );
   box-shadow: 0 12px 26px
     color-mix(in srgb, var(--bg-box-shadow) 75%, transparent);
@@ -1319,13 +1311,8 @@ onBeforeUnmount(() => {
   border-radius: 999px 0 0 999px;
   background: linear-gradient(
     90deg,
-    color-mix(
-        in srgb,
-        var(--monitor-cloud) 88%,
-        var(--color-warning-strong) 12%
-      )
-      0%,
-    color-mix(in srgb, var(--monitor-cloud) 72%, var(--color-white) 28%) 100%
+    color-mix(in srgb, var(--monitor-danger) 90%, var(--monitor-overall) 10%) 0%,
+    color-mix(in srgb, var(--monitor-danger) 72%, var(--color-white) 28%) 100%
   );
 }
 
@@ -1376,16 +1363,24 @@ onBeforeUnmount(() => {
   );
 }
 .legend-chip.consumption {
-  color: var(--monitor-cloud);
-  background: color-mix(
-    in srgb,
-    var(--monitor-cloud-soft) 86%,
-    var(--monitor-surface) 14%
+  color: var(--monitor-danger);
+  background: linear-gradient(
+    135deg,
+    color-mix(
+      in srgb,
+      var(--monitor-danger-soft) 72%,
+      var(--monitor-surface) 28%
+    ),
+    color-mix(
+      in srgb,
+      var(--monitor-primary-soft) 68%,
+      var(--monitor-surface) 32%
+    )
   );
   border-color: color-mix(
     in srgb,
-    var(--monitor-cloud) 22%,
-    var(--monitor-border) 78%
+    var(--monitor-border-accent) 52%,
+    var(--monitor-border) 48%
   );
 }
 
@@ -1432,9 +1427,6 @@ onBeforeUnmount(() => {
   );
 }
 
-.cloud-panel .section-title {
-  color: var(--monitor-danger);
-}
 .overall-panel {
   background: linear-gradient(
     180deg,

@@ -139,6 +139,34 @@
   --monitor-success-glow: rgba(23, 153, 88, 0.18);
   --monitor-danger: var(--color-error);
   --monitor-danger-soft: rgba(206, 0, 0, 0.08);
+  --monitor-trigger-border: color-mix(
+    in srgb,
+    var(--color-primary) 18%,
+    var(--color-white) 82%
+  );
+  --monitor-trigger-bg-start: rgba(255, 255, 255, 0.98);
+  --monitor-trigger-bg-end: color-mix(
+    in srgb,
+    var(--color-primaryBg) 24%,
+    var(--color-white) 76%
+  );
+  --monitor-trigger-color: var(--color-primary);
+  --monitor-trigger-shadow: -10px 14px 30px rgba(15, 23, 42, 0.12);
+  --monitor-trigger-hover-border: color-mix(
+    in srgb,
+    var(--color-primary) 34%,
+    var(--color-white) 66%
+  );
+  --monitor-trigger-hover-bg-start: rgba(255, 255, 255, 1);
+  --monitor-trigger-hover-bg-end: color-mix(
+    in srgb,
+    var(--color-primaryBg) 34%,
+    var(--color-white) 66%
+  );
+  --monitor-trigger-hover-color: var(--color-primary-hover);
+  --monitor-trigger-hover-shadow: -14px 18px 32px rgba(15, 23, 42, 0.16);
+  --monitor-trigger-accent-start: var(--color-primary-second);
+  --monitor-trigger-accent-end: var(--color-primary);
 }
 
 [data-theme="dark"] {
@@ -249,6 +277,42 @@
   --monitor-success-glow: rgba(74, 222, 128, 0.18);
   --monitor-danger: var(--monitor-overall);
   --monitor-danger-soft: var(--monitor-overall-soft);
+  --monitor-trigger-border: color-mix(
+    in srgb,
+    var(--monitor-primary) 28%,
+    var(--surface-panel-bg-strong) 72%
+  );
+  --monitor-trigger-bg-start: color-mix(
+    in srgb,
+    var(--surface-panel-bg-strong) 88%,
+    var(--surface-card-bg) 12%
+  );
+  --monitor-trigger-bg-end: color-mix(
+    in srgb,
+    var(--monitor-primary-soft) 34%,
+    var(--surface-panel-bg) 66%
+  );
+  --monitor-trigger-color: var(--monitor-primary);
+  --monitor-trigger-shadow: -10px 14px 30px rgba(8, 10, 14, 0.38);
+  --monitor-trigger-hover-border: color-mix(
+    in srgb,
+    var(--monitor-primary) 40%,
+    var(--surface-card-bg-strong) 60%
+  );
+  --monitor-trigger-hover-bg-start: color-mix(
+    in srgb,
+    var(--surface-card-bg-strong) 72%,
+    var(--surface-panel-bg-strong) 28%
+  );
+  --monitor-trigger-hover-bg-end: color-mix(
+    in srgb,
+    var(--monitor-primary-soft-alt) 40%,
+    var(--surface-panel-bg) 60%
+  );
+  --monitor-trigger-hover-color: #8db8ff;
+  --monitor-trigger-hover-shadow: -14px 18px 32px rgba(8, 10, 14, 0.46);
+  --monitor-trigger-accent-start: #6aa6ff;
+  --monitor-trigger-accent-end: var(--monitor-primary);
 }
 
 @use "ant-design-vue/es/style/themes/default.less";
